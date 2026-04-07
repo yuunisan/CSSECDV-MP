@@ -222,20 +222,54 @@ public class MgmtUser extends javax.swing.JPanel {
 
     private void chgpassBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chgpassBtnActionPerformed
         if(table.getSelectedRow() >= 0){
-            JTextField password = new JPasswordField();
-            JTextField confpass = new JPasswordField();
+            String username = (String) tableModel.getValueAt(table.getSelectedRow(), 0);
+            
+            if (sqlite.currentUser != null) {
+                JPasswordField authField = new JPasswordField();
+                Object[] authMsg = {"Re-authenticate (Enter YOUR current password):", authField};
+                int authRes = JOptionPane.showConfirmDialog(null, authMsg, "RE-AUTHENTICATE", JOptionPane.OK_CANCEL_OPTION);
+                if (authRes != JOptionPane.OK_OPTION) return;
+                
+                String inputPass = new String(authField.getPassword());
+                if (!Controller.PasswordUtil.verifyPassword(inputPass, sqlite.currentUser.getPassword())) {
+                    JOptionPane.showMessageDialog(null, "Authentication Failed.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
+
+            JPasswordField password = new JPasswordField();
+            JPasswordField confpass = new JPasswordField();
             designer(password, "PASSWORD");
             designer(confpass, "CONFIRM PASSWORD");
             
             Object[] message = {
-                "Enter New Password:", password, confpass
+                "Enter New Password for " + username + ":", password, confpass
             };
 
             int result = JOptionPane.showConfirmDialog(null, message, "CHANGE PASSWORD", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
             
             if (result == JOptionPane.OK_OPTION) {
-                System.out.println(password.getText());
-                System.out.println(confpass.getText());
+                String newPass = new String(password.getPassword());
+                String confPassStr = new String(confpass.getPassword());
+                
+                if (newPass.length() < 8 || newPass.length() > 64) {
+                    JOptionPane.showMessageDialog(null, "Password must be minimally 8 and maximally 64 characters long.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (!newPass.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,64}$")) {
+                    JOptionPane.showMessageDialog(null, "Password must contain at least 1 uppercase, 1 lowercase, 1 digit, and 1 symbol.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                if (!newPass.equals(confPassStr)) {
+                    JOptionPane.showMessageDialog(null, "Passwords do not match.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                
+                sqlite.updateUserPassword(username, newPass);
+                JOptionPane.showMessageDialog(null, "Password changed successfully for " + username + ".");
+                sqlite.addLogs("CHANGE PASS", sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", "Changed password for " + username, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+                
+                init(); // refresh table
             }
         }
     }//GEN-LAST:event_chgpassBtnActionPerformed

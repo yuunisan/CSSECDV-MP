@@ -13,6 +13,7 @@ import java.util.ArrayList;
 
 public class SQLite {
     
+    public Model.User currentUser = null;
     public int DEBUG_MODE = 0;
     String driverURL = "jdbc:sqlite:" + "database.db";
     
@@ -180,18 +181,12 @@ public class SQLite {
     }
     
     public void addUser(String username, String password) {
-        String sql = "INSERT INTO users(username,password) VALUES('" + username + "','" + password + "')";
+        String hashed = PasswordUtil.hashPassword(password);
+        String sql = "INSERT INTO users(username,password) VALUES('" + username + "','" + hashed + "')";
         
         try (Connection conn = DriverManager.getConnection(driverURL);
             Statement stmt = conn.createStatement()){
             stmt.execute(sql);
-            
-//      PREPARED STATEMENT EXAMPLE
-//      String sql = "INSERT INTO users(username,password) VALUES(?,?)";
-//      PreparedStatement pstmt = conn.prepareStatement(sql)) {
-//      pstmt.setString(1, username);
-//      pstmt.setString(2, password);
-//      pstmt.executeUpdate();
         } catch (Exception ex) {
             System.out.print(ex);
         }
@@ -280,7 +275,8 @@ public class SQLite {
     }
     
     public void addUser(String username, String password, int role) {
-        String sql = "INSERT INTO users(username,password,role) VALUES('" + username + "','" + password + "','" + role + "')";
+        String hashed = PasswordUtil.hashPassword(password);
+        String sql = "INSERT INTO users(username,password,role) VALUES('" + username + "','" + hashed + "','" + role + "')";
         
         try (Connection conn = DriverManager.getConnection(driverURL);
             Statement stmt = conn.createStatement()){
@@ -316,5 +312,70 @@ public class SQLite {
             System.out.print(ex);
         }
         return product;
+    }
+    
+    public User getUser(String username) {
+        String sql = "SELECT id, username, password, role, locked FROM users WHERE username='" + username + "';";
+        User user = null;
+        try (Connection conn = DriverManager.getConnection(driverURL);
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)){
+            if(rs.next()) {
+                user = new User(rs.getInt("id"),
+                                rs.getString("username"),
+                                rs.getString("password"),
+                                rs.getInt("role"),
+                                rs.getInt("locked"));
+            }
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+        return user;
+    }
+    
+    public void updateUserLock(String username, int locked) {
+        String sql = "UPDATE users SET locked = " + locked + " WHERE username='" + username + "';";
+        try (Connection conn = DriverManager.getConnection(driverURL);
+            Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+    }
+    
+    public void updateUserRole(String username, int role) {
+        String sql = "UPDATE users SET role = " + role + " WHERE username='" + username + "';";
+        try (Connection conn = DriverManager.getConnection(driverURL);
+            Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+    }
+    
+    public void updateUserPassword(String username, String newPassword) {
+        String hashed = PasswordUtil.hashPassword(newPassword);
+        String sql = "UPDATE users SET password = '" + hashed + "' WHERE username='" + username + "';";
+        try (Connection conn = DriverManager.getConnection(driverURL);
+            Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+    }
+    
+    public String getLastLogin(String username) {
+        String sql = "SELECT timestamp FROM logs WHERE username='" + username + "' AND event='LOGIN' ORDER BY id DESC LIMIT 1;";
+        String lastLogin = "First time login";
+        try (Connection conn = DriverManager.getConnection(driverURL);
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(sql)){
+            if(rs.next()) {
+                lastLogin = rs.getString("timestamp");
+            }
+        } catch (Exception ex) {
+            System.out.print(ex);
+        }
+        return lastLogin;
     }
 }
