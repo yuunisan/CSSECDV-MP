@@ -280,19 +280,34 @@ public class Frame extends javax.swing.JFrame {
 
                 this.currentUser = user;
                 main.sqlite.currentUser = user;
-                javax.swing.JOptionPane.showMessageDialog(this,
-                        "Authentication Successful.\nLast Login Timestamp: " + lastTimestamp + "\nStatus: SUCCESS",
-                        "Welcome", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                
+                // For 'Timestamp and status of the last account use' rule
+                javax.swing.JOptionPane.showMessageDialog(this, "Authentication Successful.\nLast Login Timestamp: " + lastTimestamp + "\nStatus: SUCCESS", "Welcome", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                
+                // Hide ALL side-nav buttons explicitly
+                adminBtn.setVisible(false);
+                managerBtn.setVisible(false);
+                staffBtn.setVisible(false);
+                clientBtn.setVisible(false);
 
                 frameView.show(Container, "homePnl");
-                if (user.getRole() == 5)
+                // Navigate based on role automatically to ensure security segregation
+                if(user.getRole() == 5) {
+                    adminBtn.setVisible(true);
                     adminBtn.doClick();
-                else if (user.getRole() == 4)
+                }
+                else if(user.getRole() == 4) {
+                    managerBtn.setVisible(true);
                     managerBtn.doClick();
-                else if (user.getRole() == 3)
+                }
+                else if(user.getRole() == 3) {
+                    staffBtn.setVisible(true);
                     staffBtn.doClick();
-                else if (user.getRole() == 2)
+                }
+                else if(user.getRole() == 2) {
+                    clientBtn.setVisible(true);
                     clientBtn.doClick();
+                }
             } else {
                 int fails = user.getLocked() + 1;
                 main.sqlite.updateUserLock(username, fails);

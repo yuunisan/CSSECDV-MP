@@ -30,19 +30,16 @@ public class MgmtUser extends javax.swing.JPanel {
         this.sqlite = sqlite;
         tableModel = (DefaultTableModel)table.getModel();
         table.getTableHeader().setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 14));
-        
-//        UNCOMMENT TO DISABLE BUTTONS
-//        editBtn.setVisible(false);
-//        deleteBtn.setVisible(false);
-//        lockBtn.setVisible(false);
-//        chgpassBtn.setVisible(false);
     }
     
     public void init(){
         //      CLEAR TABLE
-        for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
-            tableModel.removeRow(0);
-        }
+        tableModel.setRowCount(0);
+        
+        editRoleBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS));
+        deleteBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS));
+        lockBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS));
+        chgpassBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS));
         
 //      LOAD CONTENTS
         ArrayList<User> users = sqlite.getUsers();
@@ -179,6 +176,10 @@ public class MgmtUser extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void editRoleBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editRoleBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if(table.getSelectedRow() >= 0){
             String[] options = {"1-DISABLED","2-CLIENT","3-STAFF","4-MANAGER","5-ADMIN"};
             JComboBox optionList = new JComboBox(options);
@@ -189,38 +190,66 @@ public class MgmtUser extends javax.swing.JPanel {
                 "EDIT USER ROLE", JOptionPane.QUESTION_MESSAGE, null, options, options[(int)tableModel.getValueAt(table.getSelectedRow(), 2) - 1]);
             
             if(result != null){
-                System.out.println(tableModel.getValueAt(table.getSelectedRow(), 0));
-                System.out.println(result.charAt(0));
+                int newRole = Integer.parseInt(result.charAt(0) + "");
+                String username = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+                sqlite.updateUserRole(username, newRole);
+                sqlite.addLogs("EDIT ROLE", sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", "Changed role of " + username + " to " + newRole, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+                init();
             }
         }
     }//GEN-LAST:event_editRoleBtnActionPerformed
 
     private void deleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if(table.getSelectedRow() >= 0){
             int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete " + tableModel.getValueAt(table.getSelectedRow(), 0) + "?", "DELETE USER", JOptionPane.YES_NO_OPTION);
             
             if (result == JOptionPane.YES_OPTION) {
-                System.out.println(tableModel.getValueAt(table.getSelectedRow(), 0));
+                String username = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+                sqlite.removeUser(username);
+                sqlite.addLogs("DELETE USER", sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", "Deleted user " + username, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+                init();
             }
         }
     }//GEN-LAST:event_deleteBtnActionPerformed
 
     private void lockBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lockBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if(table.getSelectedRow() >= 0){
             String state = "lock";
             if("1".equals(tableModel.getValueAt(table.getSelectedRow(), 3) + "")){
                 state = "unlock";
             }
             
-            int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to " + state + " " + tableModel.getValueAt(table.getSelectedRow(), 0) + "?", "DELETE USER", JOptionPane.YES_NO_OPTION);
+            int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to " + state + " " + tableModel.getValueAt(table.getSelectedRow(), 0) + "?", "LOCK/UNLOCK USER", JOptionPane.YES_NO_OPTION);
             
             if (result == JOptionPane.YES_OPTION) {
-                System.out.println(tableModel.getValueAt(table.getSelectedRow(), 0));
+                String username = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+                if(state.equals("lock")) {
+                    sqlite.updateUserRole(username, 1);
+                    sqlite.updateUserLock(username, 5);
+                    sqlite.addLogs("LOCK USER", sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", "Locked user " + username, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+                } else {
+                    sqlite.updateUserRole(username, 2);
+                    sqlite.updateUserLock(username, 0);
+                    sqlite.addLogs("UNLOCK USER", sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", "Unlocked user " + username, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+                }
+                init();
             }
         }
     }//GEN-LAST:event_lockBtnActionPerformed
 
     private void chgpassBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chgpassBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if(table.getSelectedRow() >= 0){
             String username = (String) tableModel.getValueAt(table.getSelectedRow(), 0);
             

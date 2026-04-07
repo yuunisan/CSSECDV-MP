@@ -33,20 +33,24 @@ public class MgmtHistory extends javax.swing.JPanel {
         table.getColumnModel().getColumn(3).setCellRenderer(rightAlign);
         table.getColumnModel().getColumn(4).setCellRenderer(rightAlign);
         table.getColumnModel().getColumn(5).setCellRenderer(rightAlign);
-        
-//        UNCOMMENT TO DISABLE BUTTONS
-//        searchBtn.setVisible(false);
-//        reportBtn.setVisible(false);
     }
 
     public void init(){
 //      CLEAR TABLE
-        for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
-            tableModel.removeRow(0);
-        }
+        tableModel.setRowCount(0);
+        
+        searchBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY));
+        reloadBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY));
         
 //      LOAD CONTENTS
-        ArrayList<History> history = sqlite.getHistory();
+        ArrayList<History> history;
+        if (Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY)) {
+            history = sqlite.getHistory();
+        } else if (Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_OWN_HISTORY)) {
+            history = sqlite.getUserHistory(sqlite.currentUser.getUsername());
+        } else {
+            return;
+        }
         for(int nCtr = 0; nCtr < history.size(); nCtr++){
             Product product = sqlite.getProduct(history.get(nCtr).getName());
             tableModel.addRow(new Object[]{
@@ -159,6 +163,10 @@ public class MgmtHistory extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void searchBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_searchBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         JTextField searchFld = new JTextField("0");
         designer(searchFld, "SEARCH USERNAME OR PRODUCT");
 
@@ -170,12 +178,15 @@ public class MgmtHistory extends javax.swing.JPanel {
 
         if (result == JOptionPane.OK_OPTION) {
 //          CLEAR TABLE
-            for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
-                tableModel.removeRow(0);
-            }
+            tableModel.setRowCount(0);
 
 //          LOAD CONTENTS
-            ArrayList<History> history = sqlite.getHistory();
+            ArrayList<History> history;
+            if (Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY)) {
+                history = sqlite.getHistory();
+            } else {
+                history = sqlite.getUserHistory(sqlite.currentUser.getUsername());
+            }
             for(int nCtr = 0; nCtr < history.size(); nCtr++){
                 if(searchFld.getText().contains(history.get(nCtr).getUsername()) || 
                    history.get(nCtr).getUsername().contains(searchFld.getText()) || 
@@ -197,6 +208,10 @@ public class MgmtHistory extends javax.swing.JPanel {
     }//GEN-LAST:event_searchBtnActionPerformed
 
     private void reloadBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_reloadBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_OWN_HISTORY) && !Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         init();
     }//GEN-LAST:event_reloadBtnActionPerformed
 

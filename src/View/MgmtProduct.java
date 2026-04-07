@@ -27,19 +27,16 @@ public class MgmtProduct extends javax.swing.JPanel {
         this.sqlite = sqlite;
         tableModel = (DefaultTableModel)table.getModel();
         table.getTableHeader().setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 14));
-
-//        UNCOMMENT TO DISABLE BUTTONS
-//        purchaseBtn.setVisible(false);
-//        addBtn.setVisible(false);
-//        editBtn.setVisible(false);
-//        deleteBtn.setVisible(false);
     }
 
     public void init(){
         //      CLEAR TABLE
-        for(int nCtr = tableModel.getRowCount(); nCtr > 0; nCtr--){
-            tableModel.removeRow(0);
-        }
+        tableModel.setRowCount(0);
+        
+        purchaseBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.PURCHASE_PRODUCT));
+        addBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT));
+        editBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT));
+        deleteBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT));
         
 //      LOAD CONTENTS
         ArrayList<Product> products = sqlite.getProduct();
@@ -174,6 +171,10 @@ public class MgmtProduct extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void purchaseBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_purchaseBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.PURCHASE_PRODUCT)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if(table.getSelectedRow() >= 0){
             JTextField stockFld = new JTextField("0");
             designer(stockFld, "PRODUCT STOCK");
@@ -185,12 +186,37 @@ public class MgmtProduct extends javax.swing.JPanel {
             int result = JOptionPane.showConfirmDialog(null, message, "PURCHASE PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
             if (result == JOptionPane.OK_OPTION) {
-                System.out.println(stockFld.getText());
+                try {
+                    int quantity = Integer.parseInt(stockFld.getText());
+                    if (quantity <= 0) {
+                        JOptionPane.showMessageDialog(null, "Quantity must be positive.", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    String productName = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+                    int currentStock = Integer.parseInt(tableModel.getValueAt(table.getSelectedRow(), 1).toString());
+                    double price = Double.parseDouble(tableModel.getValueAt(table.getSelectedRow(), 2).toString());
+                    
+                    if (quantity > currentStock) {
+                        JOptionPane.showMessageDialog(null, "Not enough stock available.", "Error", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    
+                    int newStock = currentStock - quantity;
+                    sqlite.updateProduct(productName, productName, newStock, price);
+                    sqlite.addHistory(sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", productName, quantity, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+                    init();
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(null, "Invalid quantity format.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         }
     }//GEN-LAST:event_purchaseBtnActionPerformed
 
     private void addBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         JTextField nameFld = new JTextField();
         JTextField stockFld = new JTextField();
         JTextField priceFld = new JTextField();
@@ -206,13 +232,27 @@ public class MgmtProduct extends javax.swing.JPanel {
         int result = JOptionPane.showConfirmDialog(null, message, "ADD PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
         if (result == JOptionPane.OK_OPTION) {
-            System.out.println(nameFld.getText());
-            System.out.println(stockFld.getText());
-            System.out.println(priceFld.getText());
+            try {
+                String name = nameFld.getText();
+                if(name.isEmpty()) throw new IllegalArgumentException("Name cannot be empty");
+                int stock = Integer.parseInt(stockFld.getText());
+                double price = Double.parseDouble(priceFld.getText());
+                
+                if(stock < 0 || price < 0) throw new IllegalArgumentException("Values must be non-negative");
+                
+                sqlite.addProduct(name, stock, price);
+                init();
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Invalid input: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }//GEN-LAST:event_addBtnActionPerformed
 
     private void editBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if(table.getSelectedRow() >= 0){
             JTextField nameFld = new JTextField(tableModel.getValueAt(table.getSelectedRow(), 0) + "");
             JTextField stockFld = new JTextField(tableModel.getValueAt(table.getSelectedRow(), 1) + "");
@@ -229,19 +269,36 @@ public class MgmtProduct extends javax.swing.JPanel {
             int result = JOptionPane.showConfirmDialog(null, message, "EDIT PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
             if (result == JOptionPane.OK_OPTION) {
-                System.out.println(nameFld.getText());
-                System.out.println(stockFld.getText());
-                System.out.println(priceFld.getText());
+                try {
+                    String oldName = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+                    String name = nameFld.getText();
+                    if(name.isEmpty()) throw new IllegalArgumentException("Name cannot be empty");
+                    int stock = Integer.parseInt(stockFld.getText());
+                    double price = Double.parseDouble(priceFld.getText());
+                    
+                    if(stock < 0 || price < 0) throw new IllegalArgumentException("Values must be non-negative");
+                    
+                    sqlite.updateProduct(oldName, name, stock, price);
+                    init();
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(null, "Invalid input: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         }
     }//GEN-LAST:event_editBtnActionPerformed
 
     private void deleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBtnActionPerformed
+        if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT)) {
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         if(table.getSelectedRow() >= 0){
             int result = JOptionPane.showConfirmDialog(null, "Are you sure you want to delete " + tableModel.getValueAt(table.getSelectedRow(), 0) + "?", "DELETE PRODUCT", JOptionPane.YES_NO_OPTION);
             
             if (result == JOptionPane.YES_OPTION) {
-                System.out.println(tableModel.getValueAt(table.getSelectedRow(), 0));
+                String name = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+                sqlite.deleteProduct(name);
+                init();
             }
         }
     }//GEN-LAST:event_deleteBtnActionPerformed

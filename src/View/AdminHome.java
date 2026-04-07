@@ -25,6 +25,7 @@ public class AdminHome extends javax.swing.JPanel {
     public MgmtLogs mgmtLogs;
     public MgmtProduct mgmtProduct;
     public MgmtUser mgmtUser;
+    public SQLite sqlite;
     
     private CardLayout contentView = new CardLayout();
     
@@ -33,6 +34,7 @@ public class AdminHome extends javax.swing.JPanel {
     }
     
     public void init(SQLite sqlite){
+        this.sqlite = sqlite;
         mgmtHistory = new MgmtHistory(sqlite);
         mgmtLogs = new MgmtLogs(sqlite);
         mgmtProduct = new MgmtProduct(sqlite);
@@ -45,14 +47,13 @@ public class AdminHome extends javax.swing.JPanel {
         Content.add(this.mgmtProduct, "mgmtProduct");
         Content.add(this.mgmtLogs, "mgmtLogs");
         
-//        UNCOMMENT TO DISABLE BUTTONS
-//        historyBtn.setVisible(false);
-//        usersBtn.setVisible(false);
-//        productsBtn.setVisible(false);
-//        logsBtn.setVisible(false);
     }
     
     public void showPnl(String panelName){
+        historyBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_OWN_HISTORY) || Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY));
+        usersBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS));
+        productsBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_PRODUCTS));
+        logsBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS));
         contentView.show(Content, panelName);
     }
 
