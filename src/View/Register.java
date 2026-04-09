@@ -107,14 +107,21 @@ public class Register extends javax.swing.JPanel {
         String password = new String(passwordFld.getPassword());
         String confpass = new String(confpassFld.getPassword());
 
-        if (password.length() < 8 || password.length() > 64) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Password must be minimally 8 and maximally 64 characters long.", "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+        // 2.3.1 / 2.3.3: Validate username — reject if it fails whitelist or length check.
+        String usernameErr = Controller.InputValidator.validateUsername(username);
+        if (usernameErr != null) {
+            javax.swing.JOptionPane.showMessageDialog(this, usernameErr, "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
         }
-        if (!password.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,64}$")) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Password must contain at least 1 uppercase, 1 lowercase, 1 digit, and 1 symbol.", "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+
+        // 2.3.1 / 2.3.3: Validate password — reject if it fails policy or length check.
+        String passwordErr = Controller.InputValidator.validatePassword(password);
+        if (passwordErr != null) {
+            javax.swing.JOptionPane.showMessageDialog(this, passwordErr, "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
         }
+
+        // Confirm passwords match.
         if (!password.equals(confpass)) {
             javax.swing.JOptionPane.showMessageDialog(this, "Passwords do not match.", "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             return;

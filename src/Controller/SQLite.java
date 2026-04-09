@@ -457,13 +457,14 @@ public class SQLite {
     }
     
     public String getLastLogin(String username) {
+        // 2.3.4: Use PreparedStatement to prevent SQL Injection.
         String sql = "SELECT timestamp FROM logs WHERE username=? AND event='LOGIN' ORDER BY id DESC LIMIT 1;";
         String lastLogin = "First time login";
         try (Connection conn = DriverManager.getConnection(driverURL);
-            java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)){
+            java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
             try (ResultSet rs = pstmt.executeQuery()) {
-                if(rs.next()) {
+                if (rs.next()) {
                     lastLogin = rs.getString("timestamp");
                 }
             }

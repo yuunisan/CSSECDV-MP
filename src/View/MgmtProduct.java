@@ -186,28 +186,28 @@ public class MgmtProduct extends javax.swing.JPanel {
             int result = JOptionPane.showConfirmDialog(null, message, "PURCHASE PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
             if (result == JOptionPane.OK_OPTION) {
+                // 2.3.2 / 2.3.3: Validate quantity — must be a positive integer within range.
+                int quantity;
                 try {
-                    int quantity = Integer.parseInt(stockFld.getText());
-                    if (quantity <= 0) {
-                        JOptionPane.showMessageDialog(null, "Quantity must be positive.", "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                    String productName = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
-                    int currentStock = Integer.parseInt(tableModel.getValueAt(table.getSelectedRow(), 1).toString());
-                    double price = Double.parseDouble(tableModel.getValueAt(table.getSelectedRow(), 2).toString());
-                    
-                    if (quantity > currentStock) {
-                        JOptionPane.showMessageDialog(null, "Not enough stock available.", "Error", JOptionPane.ERROR_MESSAGE);
-                        return;
-                    }
-                    
-                    int newStock = currentStock - quantity;
-                    sqlite.updateProduct(productName, productName, newStock, price);
-                    sqlite.addHistory(sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", productName, quantity, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
-                    init();
+                    quantity = Integer.parseInt(stockFld.getText());
                 } catch (NumberFormatException e) {
-                    JOptionPane.showMessageDialog(null, "Invalid quantity format.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Quantity must be a valid integer.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
+                String productName = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+                int currentStock = Integer.parseInt(tableModel.getValueAt(table.getSelectedRow(), 1).toString());
+                double price = Double.parseDouble(tableModel.getValueAt(table.getSelectedRow(), 2).toString());
+
+                String qtyErr = Controller.InputValidator.validateQuantity(quantity, currentStock);
+                if (qtyErr != null) {
+                    JOptionPane.showMessageDialog(null, qtyErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                int newStock = currentStock - quantity;
+                sqlite.updateProduct(productName, productName, newStock, price);
+                sqlite.addHistory(sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", productName, quantity, new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+                init();
             }
         }
     }//GEN-LAST:event_purchaseBtnActionPerformed
@@ -232,19 +232,37 @@ public class MgmtProduct extends javax.swing.JPanel {
         int result = JOptionPane.showConfirmDialog(null, message, "ADD PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
         if (result == JOptionPane.OK_OPTION) {
-            try {
-                String name = nameFld.getText();
-                if(name.isEmpty()) throw new IllegalArgumentException("Name cannot be empty");
-                int stock = Integer.parseInt(stockFld.getText());
-                double price = Double.parseDouble(priceFld.getText());
-                
-                if(stock < 0 || price < 0) throw new IllegalArgumentException("Values must be non-negative");
-                
-                sqlite.addProduct(name, stock, price);
-                init();
-            } catch (Exception e) {
-                JOptionPane.showMessageDialog(null, "Invalid input: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            // 2.3.1 / 2.3.3: Validate product name — reject if whitelist or length fails.
+            String nameErr = Controller.InputValidator.validateProductName(nameFld.getText());
+            if (nameErr != null) {
+                JOptionPane.showMessageDialog(null, nameErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
+
+            // 2.3.2: Validate stock and price numerical ranges.
+            int stock;
+            double price;
+            try {
+                stock = Integer.parseInt(stockFld.getText());
+                price = Double.parseDouble(priceFld.getText());
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "Stock must be a valid integer and price must be a valid number.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String stockErr = Controller.InputValidator.validateStock(stock);
+            if (stockErr != null) {
+                JOptionPane.showMessageDialog(null, stockErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            String priceErr = Controller.InputValidator.validatePrice(price);
+            if (priceErr != null) {
+                JOptionPane.showMessageDialog(null, priceErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            sqlite.addProduct(nameFld.getText(), stock, price);
+            init();
         }
     }//GEN-LAST:event_addBtnActionPerformed
 
@@ -269,20 +287,39 @@ public class MgmtProduct extends javax.swing.JPanel {
             int result = JOptionPane.showConfirmDialog(null, message, "EDIT PRODUCT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null);
 
             if (result == JOptionPane.OK_OPTION) {
-                try {
-                    String oldName = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
-                    String name = nameFld.getText();
-                    if(name.isEmpty()) throw new IllegalArgumentException("Name cannot be empty");
-                    int stock = Integer.parseInt(stockFld.getText());
-                    double price = Double.parseDouble(priceFld.getText());
-                    
-                    if(stock < 0 || price < 0) throw new IllegalArgumentException("Values must be non-negative");
-                    
-                    sqlite.updateProduct(oldName, name, stock, price);
-                    init();
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(null, "Invalid input: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                String oldName = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
+
+                // 2.3.1 / 2.3.3: Validate product name — reject if whitelist or length fails.
+                String nameErr = Controller.InputValidator.validateProductName(nameFld.getText());
+                if (nameErr != null) {
+                    JOptionPane.showMessageDialog(null, nameErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
                 }
+
+                // 2.3.2: Validate stock and price numerical ranges.
+                int stock;
+                double price;
+                try {
+                    stock = Integer.parseInt(stockFld.getText());
+                    price = Double.parseDouble(priceFld.getText());
+                } catch (NumberFormatException e) {
+                    JOptionPane.showMessageDialog(null, "Stock must be a valid integer and price must be a valid number.", "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                String stockErr = Controller.InputValidator.validateStock(stock);
+                if (stockErr != null) {
+                    JOptionPane.showMessageDialog(null, stockErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                String priceErr = Controller.InputValidator.validatePrice(price);
+                if (priceErr != null) {
+                    JOptionPane.showMessageDialog(null, priceErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                sqlite.updateProduct(oldName, nameFld.getText(), stock, price);
+                init();
             }
         }
     }//GEN-LAST:event_editBtnActionPerformed

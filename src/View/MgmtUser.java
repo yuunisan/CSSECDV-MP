@@ -191,6 +191,14 @@ public class MgmtUser extends javax.swing.JPanel {
             
             if(result != null){
                 int newRole = Integer.parseInt(result.charAt(0) + "");
+
+                // 2.3.2: Validate role code is strictly within the allowed range (1-5).
+                String roleErr = Controller.InputValidator.validateRole(newRole);
+                if (roleErr != null) {
+                    JOptionPane.showMessageDialog(null, roleErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
                 String username = tableModel.getValueAt(table.getSelectedRow(), 0).toString();
                 sqlite.updateUserRole(username, newRole);
                 sqlite.addLogs("EDIT ROLE", sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN", "Changed role of " + username + " to " + newRole, new java.sql.Timestamp(new java.util.Date().getTime()).toString());

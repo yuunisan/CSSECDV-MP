@@ -288,6 +288,20 @@ public class Frame extends javax.swing.JFrame {
 
     public void loginAction(String username, String password) {
         try {
+            // 2.3.1 / 2.3.3: Reject-by-default — validate username format and password length
+            // before touching the database. Use a generic error to avoid username enumeration.
+            String usernameErr = Controller.InputValidator.validateUsername(username);
+            if (usernameErr != null) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Invalid username and/or password",
+                        "Login Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (password == null || password.isEmpty() || password.length() > Controller.InputValidator.MAX_PASSWORD_LENGTH) {
+                javax.swing.JOptionPane.showMessageDialog(this, "Invalid username and/or password",
+                        "Login Error", javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             Model.User user = main.sqlite.getUser(username);
             if (user != null) {
                 if (user.getRole() == 1 || user.getLocked() >= 5) {
