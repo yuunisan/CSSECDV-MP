@@ -195,21 +195,45 @@ public class Frame extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void adminBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_adminBtnActionPerformed
+        if (currentUser == null || currentUser.getRole() != 5) {
+            logAccessDenied("NAVIGATION_ADMIN_HOME");
+            JOptionPane.showMessageDialog(this, "Access Denied.", "Authorization Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         adminHomePnl.showPnl("home");
         contentView.show(Content, "adminHomePnl");
     }// GEN-LAST:event_adminBtnActionPerformed
 
     private void managerBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_managerBtnActionPerformed
+        if (currentUser == null || currentUser.getRole() != 4) {
+            logAccessDenied("NAVIGATION_MANAGER_HOME");
+            JOptionPane.showMessageDialog(this, "Access Denied.", "Authorization Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         managerHomePnl.showPnl("home");
         contentView.show(Content, "managerHomePnl");
     }// GEN-LAST:event_managerBtnActionPerformed
 
     private void staffBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_staffBtnActionPerformed
+        if (currentUser == null || currentUser.getRole() != 3) {
+            logAccessDenied("NAVIGATION_STAFF_HOME");
+            JOptionPane.showMessageDialog(this, "Access Denied.", "Authorization Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         staffHomePnl.showPnl("home");
         contentView.show(Content, "staffHomePnl");
     }// GEN-LAST:event_staffBtnActionPerformed
 
     private void clientBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_clientBtnActionPerformed
+        if (currentUser == null || currentUser.getRole() != 2) {
+            logAccessDenied("NAVIGATION_CLIENT_HOME");
+            JOptionPane.showMessageDialog(this, "Access Denied.", "Authorization Error",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         clientHomePnl.showPnl("home");
         contentView.show(Content, "clientHomePnl");
     }// GEN-LAST:event_clientBtnActionPerformed
@@ -305,6 +329,9 @@ public class Frame extends javax.swing.JFrame {
             Model.User user = main.sqlite.getUser(username);
             if (user != null) {
                 if (user.getRole() == 1 || user.getLocked() >= 5) {
+                    main.sqlite.addLogs("LOGIN_FAILED", username,
+                            "Authentication failed: account unavailable.",
+                            new java.sql.Timestamp(new java.util.Date().getTime()).toString());
                     JOptionPane.showMessageDialog(this, "Account unavailable. Please contact support.",
                             "Login Error", JOptionPane.ERROR_MESSAGE);
                     loginNav();
@@ -349,14 +376,23 @@ public class Frame extends javax.swing.JFrame {
                 } else {
                     int fails = user.getLocked() + 1;
                     main.sqlite.updateUserLock(username, fails);
+                    main.sqlite.addLogs("LOGIN_FAILED", username,
+                            "Authentication failed: invalid credentials (attempt " + fails + "/5).",
+                            new java.sql.Timestamp(new java.util.Date().getTime()).toString());
                     if (fails >= 5) {
                         main.sqlite.updateUserRole(username, 1);
+                        main.sqlite.addLogs("ACCOUNT_LOCKED", username,
+                                "Account locked after repeated authentication failures.",
+                                new java.sql.Timestamp(new java.util.Date().getTime()).toString());
                     }
                     JOptionPane.showMessageDialog(this, "Invalid username or password.", "Login Error",
                             JOptionPane.ERROR_MESSAGE);
                     loginNav();
                 }
             } else {
+                main.sqlite.addLogs("LOGIN_FAILED", username,
+                        "Authentication failed: unknown username.",
+                        new java.sql.Timestamp(new java.util.Date().getTime()).toString());
                 JOptionPane.showMessageDialog(this, "Invalid username or password.", "Login Error",
                         JOptionPane.ERROR_MESSAGE);
                 loginNav();
@@ -396,6 +432,15 @@ public class Frame extends javax.swing.JFrame {
                     "Registration could not be completed. The application stayed in a safe state.",
                     "Registration Error", JOptionPane.ERROR_MESSAGE);
             return false;
+        }
+    }
+
+    private void logAccessDenied(String action) {
+        if (main != null && main.sqlite != null) {
+            String username = currentUser != null ? currentUser.getUsername() : "UNKNOWN";
+            main.sqlite.addLogs("ACCESS_DENIED", username,
+                    "Denied access attempt: " + action,
+                    new java.sql.Timestamp(new java.util.Date().getTime()).toString());
         }
     }
 

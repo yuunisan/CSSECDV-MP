@@ -177,6 +177,7 @@ public class MgmtUser extends javax.swing.JPanel {
 
     private void editRoleBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editRoleBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            logAccessDenied("EDIT_ROLE");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -209,6 +210,7 @@ public class MgmtUser extends javax.swing.JPanel {
 
     private void deleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            logAccessDenied("DELETE_USER");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -226,6 +228,7 @@ public class MgmtUser extends javax.swing.JPanel {
 
     private void lockBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_lockBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            logAccessDenied("LOCK_UNLOCK_USER");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -255,6 +258,7 @@ public class MgmtUser extends javax.swing.JPanel {
 
     private void chgpassBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chgpassBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            logAccessDenied("CHANGE_PASSWORD");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -269,6 +273,7 @@ public class MgmtUser extends javax.swing.JPanel {
                 
                 String inputPass = new String(authField.getPassword());
                 if (!Controller.PasswordUtil.verifyPassword(inputPass, sqlite.currentUser.getPassword())) {
+                    logValidationFailure("CHANGE_PASSWORD", "Re-authentication failed.");
                     JOptionPane.showMessageDialog(null, "Authentication Failed.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -290,14 +295,17 @@ public class MgmtUser extends javax.swing.JPanel {
                 String confPassStr = new String(confpass.getPassword());
                 
                 if (newPass.length() < 8 || newPass.length() > 64) {
+                    logValidationFailure("CHANGE_PASSWORD", "Password length policy failed.");
                     JOptionPane.showMessageDialog(null, "Password must be minimally 8 and maximally 64 characters long.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 if (!newPass.matches("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,64}$")) {
+                    logValidationFailure("CHANGE_PASSWORD", "Password complexity policy failed.");
                     JOptionPane.showMessageDialog(null, "Password must contain at least 1 uppercase, 1 lowercase, 1 digit, and 1 symbol.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 if (!newPass.equals(confPassStr)) {
+                    logValidationFailure("CHANGE_PASSWORD", "Password confirmation mismatch.");
                     JOptionPane.showMessageDialog(null, "Passwords do not match.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -310,6 +318,22 @@ public class MgmtUser extends javax.swing.JPanel {
             }
         }
     }//GEN-LAST:event_chgpassBtnActionPerformed
+
+    private String getAuditUsername() {
+        return sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN";
+    }
+
+    private void logAccessDenied(String action) {
+        sqlite.addLogs("ACCESS_DENIED", getAuditUsername(),
+                "Denied access attempt: " + action,
+                new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+    }
+
+    private void logValidationFailure(String action, String reason) {
+        sqlite.addLogs("VALIDATION_FAILED", getAuditUsername(),
+                action + " validation failed: " + reason,
+                new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+    }
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

@@ -137,6 +137,7 @@ public class MgmtLogs extends javax.swing.JPanel {
 
     private void clearBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_clearBtnActionPerformed
         if (!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS)) {
+            logAccessDenied("CLEAR_LOGS");
             javax.swing.JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error",
                     javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
@@ -151,6 +152,7 @@ public class MgmtLogs extends javax.swing.JPanel {
 
     private void debugBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_debugBtnActionPerformed
         if (!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS)) {
+            logAccessDenied("TOGGLE_DEBUG_MODE");
             javax.swing.JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error",
                     javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
@@ -160,6 +162,13 @@ public class MgmtLogs extends javax.swing.JPanel {
         else
             sqlite.DEBUG_MODE = 1;
     }// GEN-LAST:event_debugBtnActionPerformed
+
+    private void logAccessDenied(String action) {
+        String username = sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN";
+        sqlite.addLogs("ACCESS_DENIED", username,
+                "Denied access attempt: " + action,
+                new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+    }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton clearBtn;

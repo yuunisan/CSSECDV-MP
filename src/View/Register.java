@@ -110,6 +110,7 @@ public class Register extends javax.swing.JPanel {
         // 2.3.1 / 2.3.3: Validate username — reject if it fails whitelist or length check.
         String usernameErr = Controller.InputValidator.validateUsername(username);
         if (usernameErr != null) {
+            logValidationFailure(username, "Registration username validation failed.");
             javax.swing.JOptionPane.showMessageDialog(this, usernameErr, "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -117,12 +118,14 @@ public class Register extends javax.swing.JPanel {
         // 2.3.1 / 2.3.3: Validate password — reject if it fails policy or length check.
         String passwordErr = Controller.InputValidator.validatePassword(password);
         if (passwordErr != null) {
+            logValidationFailure(username, "Registration password policy validation failed.");
             javax.swing.JOptionPane.showMessageDialog(this, passwordErr, "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
         }
 
         // Confirm passwords match.
         if (!password.equals(confpass)) {
+            logValidationFailure(username, "Registration password confirmation mismatch.");
             javax.swing.JOptionPane.showMessageDialog(this, "Passwords do not match.", "Registration Error", javax.swing.JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -135,6 +138,14 @@ public class Register extends javax.swing.JPanel {
     private void backBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_backBtnActionPerformed
         frame.loginNav();
     }//GEN-LAST:event_backBtnActionPerformed
+
+    private void logValidationFailure(String username, String reason) {
+        if (frame != null && frame.main != null && frame.main.sqlite != null) {
+            String auditUser = (username == null || username.trim().isEmpty()) ? "UNKNOWN" : username.trim();
+            frame.main.sqlite.addLogs("VALIDATION_FAILED", auditUser, reason,
+                    new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+        }
+    }
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

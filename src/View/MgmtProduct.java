@@ -172,6 +172,7 @@ public class MgmtProduct extends javax.swing.JPanel {
 
     private void purchaseBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_purchaseBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.PURCHASE_PRODUCT)) {
+            logAccessDenied("PURCHASE_PRODUCT");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -191,6 +192,7 @@ public class MgmtProduct extends javax.swing.JPanel {
                 try {
                     quantity = Integer.parseInt(stockFld.getText());
                 } catch (NumberFormatException e) {
+                    logValidationFailure("PURCHASE_PRODUCT", "Invalid quantity format.");
                     JOptionPane.showMessageDialog(null, "Quantity must be a valid integer.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -200,6 +202,7 @@ public class MgmtProduct extends javax.swing.JPanel {
 
                 String qtyErr = Controller.InputValidator.validateQuantity(quantity, currentStock);
                 if (qtyErr != null) {
+                    logValidationFailure("PURCHASE_PRODUCT", "Quantity validation failed: " + qtyErr);
                     JOptionPane.showMessageDialog(null, qtyErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -214,6 +217,7 @@ public class MgmtProduct extends javax.swing.JPanel {
 
     private void addBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_addBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT)) {
+            logAccessDenied("ADD_PRODUCT");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -235,6 +239,7 @@ public class MgmtProduct extends javax.swing.JPanel {
             // 2.3.1 / 2.3.3: Validate product name — reject if whitelist or length fails.
             String nameErr = Controller.InputValidator.validateProductName(nameFld.getText());
             if (nameErr != null) {
+                logValidationFailure("ADD_PRODUCT", "Invalid product name.");
                 JOptionPane.showMessageDialog(null, nameErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -246,17 +251,20 @@ public class MgmtProduct extends javax.swing.JPanel {
                 stock = Integer.parseInt(stockFld.getText());
                 price = Double.parseDouble(priceFld.getText());
             } catch (NumberFormatException e) {
+                logValidationFailure("ADD_PRODUCT", "Invalid stock or price format.");
                 JOptionPane.showMessageDialog(null, "Stock must be a valid integer and price must be a valid number.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
 
             String stockErr = Controller.InputValidator.validateStock(stock);
             if (stockErr != null) {
+                logValidationFailure("ADD_PRODUCT", "Stock validation failed: " + stockErr);
                 JOptionPane.showMessageDialog(null, stockErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             String priceErr = Controller.InputValidator.validatePrice(price);
             if (priceErr != null) {
+                logValidationFailure("ADD_PRODUCT", "Price validation failed: " + priceErr);
                 JOptionPane.showMessageDialog(null, priceErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
@@ -268,6 +276,7 @@ public class MgmtProduct extends javax.swing.JPanel {
 
     private void editBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_editBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT)) {
+            logAccessDenied("EDIT_PRODUCT");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -292,6 +301,7 @@ public class MgmtProduct extends javax.swing.JPanel {
                 // 2.3.1 / 2.3.3: Validate product name — reject if whitelist or length fails.
                 String nameErr = Controller.InputValidator.validateProductName(nameFld.getText());
                 if (nameErr != null) {
+                    logValidationFailure("EDIT_PRODUCT", "Invalid product name.");
                     JOptionPane.showMessageDialog(null, nameErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -303,17 +313,20 @@ public class MgmtProduct extends javax.swing.JPanel {
                     stock = Integer.parseInt(stockFld.getText());
                     price = Double.parseDouble(priceFld.getText());
                 } catch (NumberFormatException e) {
+                    logValidationFailure("EDIT_PRODUCT", "Invalid stock or price format.");
                     JOptionPane.showMessageDialog(null, "Stock must be a valid integer and price must be a valid number.", "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
 
                 String stockErr = Controller.InputValidator.validateStock(stock);
                 if (stockErr != null) {
+                    logValidationFailure("EDIT_PRODUCT", "Stock validation failed: " + stockErr);
                     JOptionPane.showMessageDialog(null, stockErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
                 String priceErr = Controller.InputValidator.validatePrice(price);
                 if (priceErr != null) {
+                    logValidationFailure("EDIT_PRODUCT", "Price validation failed: " + priceErr);
                     JOptionPane.showMessageDialog(null, priceErr, "Validation Error", JOptionPane.ERROR_MESSAGE);
                     return;
                 }
@@ -326,6 +339,7 @@ public class MgmtProduct extends javax.swing.JPanel {
 
     private void deleteBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_deleteBtnActionPerformed
         if(!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.MANAGE_PRODUCT)) {
+            logAccessDenied("DELETE_PRODUCT");
             JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -339,6 +353,22 @@ public class MgmtProduct extends javax.swing.JPanel {
             }
         }
     }//GEN-LAST:event_deleteBtnActionPerformed
+
+    private String getAuditUsername() {
+        return sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN";
+    }
+
+    private void logAccessDenied(String action) {
+        sqlite.addLogs("ACCESS_DENIED", getAuditUsername(),
+                "Denied access attempt: " + action,
+                new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+    }
+
+    private void logValidationFailure(String action, String reason) {
+        sqlite.addLogs("VALIDATION_FAILED", getAuditUsername(),
+                action + " validation failed: " + reason,
+                new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+    }
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

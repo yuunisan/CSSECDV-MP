@@ -13,6 +13,7 @@ import Model.User;
 import java.awt.CardLayout;
 import java.awt.Color;
 import java.util.ArrayList;
+import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 
 /**
@@ -157,6 +158,11 @@ public class ManagerHome extends javax.swing.JPanel {
     }// </editor-fold>//GEN-END:initComponents
 
     private void usersBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_usersBtnActionPerformed
+        if (!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_USERS)) {
+            logAccessDenied("NAVIGATION_USERS_PANEL");
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         mgmtUser.init();
         usersBtn.setForeground(Color.red);
         productsBtn.setForeground(Color.black);
@@ -166,6 +172,11 @@ public class ManagerHome extends javax.swing.JPanel {
     }//GEN-LAST:event_usersBtnActionPerformed
 
     private void productsBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_productsBtnActionPerformed
+        if (!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_PRODUCTS)) {
+            logAccessDenied("NAVIGATION_PRODUCTS_PANEL");
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         mgmtProduct.init();
         usersBtn.setForeground(Color.black);
         productsBtn.setForeground(Color.red);
@@ -175,6 +186,12 @@ public class ManagerHome extends javax.swing.JPanel {
     }//GEN-LAST:event_productsBtnActionPerformed
 
     private void historyBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_historyBtnActionPerformed
+        if (!(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_OWN_HISTORY)
+                || Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_ALL_HISTORY))) {
+            logAccessDenied("NAVIGATION_HISTORY_PANEL");
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         mgmtHistory.init();
         usersBtn.setForeground(Color.black);
         productsBtn.setForeground(Color.black);
@@ -184,6 +201,11 @@ public class ManagerHome extends javax.swing.JPanel {
     }//GEN-LAST:event_historyBtnActionPerformed
 
     private void logsBtnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_logsBtnActionPerformed
+        if (!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS)) {
+            logAccessDenied("NAVIGATION_LOGS_PANEL");
+            JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         mgmtLogs.init();
         usersBtn.setForeground(Color.black);
         productsBtn.setForeground(Color.black);
@@ -191,6 +213,13 @@ public class ManagerHome extends javax.swing.JPanel {
         logsBtn.setForeground(Color.red);
         contentView.show(Content, "mgmtLogs");
     }//GEN-LAST:event_logsBtnActionPerformed
+
+    private void logAccessDenied(String action) {
+        String username = sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN";
+        sqlite.addLogs("ACCESS_DENIED", username,
+                "Denied access attempt: " + action,
+                new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+    }
     
     
 
