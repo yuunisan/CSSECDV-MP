@@ -5,6 +5,7 @@ import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Dimension;
 import javax.swing.WindowConstants;
+import javax.swing.JOptionPane;
 
 public class Frame extends javax.swing.JFrame {
 
@@ -239,10 +240,7 @@ public class Frame extends javax.swing.JFrame {
         loginPnl.frame = this;
         registerPnl.frame = this;
 
-        adminHomePnl.init(main.sqlite);
-        clientHomePnl.init(main.sqlite);
-        managerHomePnl.init(main.sqlite);
-        staffHomePnl.init(main.sqlite);
+        initializeDashboardPanels();
 
         Container.setLayout(frameView);
         Container.add(loginPnl, "loginPnl");
@@ -259,67 +257,101 @@ public class Frame extends javax.swing.JFrame {
         this.setVisible(true);
     }
 
+    private void initializeDashboardPanels() {
+        safeInitPanel("admin", adminHomePnl);
+        safeInitPanel("client", clientHomePnl);
+        safeInitPanel("manager", managerHomePnl);
+        safeInitPanel("staff", staffHomePnl);
+    }
+
+    private void safeInitPanel(String panelName, Object panel) {
+        try {
+            if (panel instanceof AdminHome) {
+                ((AdminHome) panel).init(main.sqlite);
+            } else if (panel instanceof ManagerHome) {
+                ((ManagerHome) panel).init(main.sqlite);
+            } else if (panel instanceof StaffHome) {
+                ((StaffHome) panel).init(main.sqlite);
+            } else if (panel instanceof ClientHome) {
+                ((ClientHome) panel).init(main.sqlite);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "A screen could not be loaded. The application will continue in a safe state.",
+                    "Application Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
     public void mainNav() {
         frameView.show(Container, "homePnl");
     }
 
     public void loginAction(String username, String password) {
-        Model.User user = main.sqlite.getUser(username);
-        if (user != null) {
-            if (user.getRole() == 1 || user.getLocked() >= 5) {
-                javax.swing.JOptionPane.showMessageDialog(this, "Account Disabled. Please contact administrator.",
-                        "Login Error", javax.swing.JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            if (Controller.PasswordUtil.verifyPassword(password, user.getPassword())) {
-                main.sqlite.updateUserLock(username, 0);
-                String lastTimestamp = main.sqlite.getLastLogin(username);
-                main.sqlite.addLogs("LOGIN", username, "User login successful",
-                        new java.sql.Timestamp(new java.util.Date().getTime()).toString());
-
-                this.currentUser = user;
-                main.sqlite.currentUser = user;
-                
-                // For 'Timestamp and status of the last account use' rule
-                javax.swing.JOptionPane.showMessageDialog(this, "Authentication Successful.\nLast Login Timestamp: " + lastTimestamp + "\nStatus: SUCCESS", "Welcome", javax.swing.JOptionPane.INFORMATION_MESSAGE);
-                
-                // Hide ALL side-nav buttons explicitly
-                adminBtn.setVisible(false);
-                managerBtn.setVisible(false);
-                staffBtn.setVisible(false);
-                clientBtn.setVisible(false);
-
-                frameView.show(Container, "homePnl");
-                // Navigate based on role automatically to ensure security segregation
-                if(user.getRole() == 5) {
-                    adminBtn.setVisible(true);
-                    adminBtn.doClick();
+        try {
+            Model.User user = main.sqlite.getUser(username);
+            if (user != null) {
+                if (user.getRole() == 1 || user.getLocked() >= 5) {
+                    JOptionPane.showMessageDialog(this, "Account unavailable. Please contact support.",
+                            "Login Error", JOptionPane.ERROR_MESSAGE);
+                    loginNav();
+                    return;
                 }
-                else if(user.getRole() == 4) {
-                    managerBtn.setVisible(true);
-                    managerBtn.doClick();
-                }
-                else if(user.getRole() == 3) {
-                    staffBtn.setVisible(true);
-                    staffBtn.doClick();
-                }
-                else if(user.getRole() == 2) {
-                    clientBtn.setVisible(true);
-                    clientBtn.doClick();
+
+                if (Controller.PasswordUtil.verifyPassword(password, user.getPassword())) {
+                    main.sqlite.updateUserLock(username, 0);
+                    String lastTimestamp = main.sqlite.getLastLogin(username);
+                    main.sqlite.addLogs("LOGIN", username, "User login successful",
+                            new java.sql.Timestamp(new java.util.Date().getTime()).toString());
+
+                    this.currentUser = user;
+                    main.sqlite.currentUser = user;
+
+                    JOptionPane.showMessageDialog(this,
+                            "Authentication successful.\nLast login timestamp: " + lastTimestamp,
+                            "Welcome", JOptionPane.INFORMATION_MESSAGE);
+
+                    adminBtn.setVisible(false);
+                    managerBtn.setVisible(false);
+                    staffBtn.setVisible(false);
+                    clientBtn.setVisible(false);
+
+                    frameView.show(Container, "homePnl");
+                    if(user.getRole() == 5) {
+                        adminBtn.setVisible(true);
+                        adminBtn.doClick();
+                    }
+                    else if(user.getRole() == 4) {
+                        managerBtn.setVisible(true);
+                        managerBtn.doClick();
+                    }
+                    else if(user.getRole() == 3) {
+                        staffBtn.setVisible(true);
+                        staffBtn.doClick();
+                    }
+                    else if(user.getRole() == 2) {
+                        clientBtn.setVisible(true);
+                        clientBtn.doClick();
+                    }
+                } else {
+                    int fails = user.getLocked() + 1;
+                    main.sqlite.updateUserLock(username, fails);
+                    if (fails >= 5) {
+                        main.sqlite.updateUserRole(username, 1);
+                    }
+                    JOptionPane.showMessageDialog(this, "Invalid username or password.", "Login Error",
+                            JOptionPane.ERROR_MESSAGE);
+                    loginNav();
                 }
             } else {
-                int fails = user.getLocked() + 1;
-                main.sqlite.updateUserLock(username, fails);
-                if (fails >= 5) {
-                    main.sqlite.updateUserRole(username, 1);
-                }
-                javax.swing.JOptionPane.showMessageDialog(this, "Invalid username and/or password", "Login Error",
-                        javax.swing.JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Invalid username or password.", "Login Error",
+                        JOptionPane.ERROR_MESSAGE);
+                loginNav();
             }
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this, "Invalid username and/or password", "Login Error",
-                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "The application encountered a problem and returned to a safe state.",
+                    "Application Error", JOptionPane.ERROR_MESSAGE);
+            loginNav();
         }
     }
 
@@ -336,8 +368,21 @@ public class Frame extends javax.swing.JFrame {
         frameView.show(Container, "registerPnl");
     }
 
-    public void registerAction(String username, String password, String confpass) {
-        main.sqlite.addUser(username, password);
+    public boolean registerAction(String username, String password, String confpass) {
+        try {
+            boolean created = main.sqlite.addUser(username, password);
+            if (!created) {
+                JOptionPane.showMessageDialog(this,
+                        "Registration failed. Please use a different username or try again.",
+                        "Registration Error", JOptionPane.ERROR_MESSAGE);
+            }
+            return created;
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Registration could not be completed. The application stayed in a safe state.",
+                    "Registration Error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        }
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables

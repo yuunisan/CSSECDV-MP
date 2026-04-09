@@ -16,6 +16,14 @@ public class SQLite {
     public Model.User currentUser = null;
     public int DEBUG_MODE = 0;
     String driverURL = "jdbc:sqlite:" + "database.db";
+
+    private void reportDatabaseError(Exception ex) {
+        if (DEBUG_MODE == 1) {
+            System.err.println("A database operation failed: " + ex.getClass().getSimpleName());
+        } else {
+            System.err.println("A database operation failed.");
+        }
+    }
     
     public void createNewDatabase() {
         try (Connection conn = DriverManager.getConnection(driverURL)) {
@@ -24,7 +32,7 @@ public class SQLite {
                 System.out.println("Database database.db created.");
             }
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -42,7 +50,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table history in database.db created.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -60,7 +68,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table logs in database.db created.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
      
@@ -77,7 +85,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table product in database.db created.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
      
@@ -95,7 +103,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table users in database.db created.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -107,7 +115,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table history in database.db dropped.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -119,7 +127,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table logs in database.db dropped.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -131,7 +139,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table product in database.db dropped.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -143,7 +151,7 @@ public class SQLite {
             stmt.execute(sql);
             System.out.println("Table users in database.db dropped.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -153,7 +161,7 @@ public class SQLite {
             Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -167,7 +175,7 @@ public class SQLite {
             pstmt.setString(4, timestamp);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -181,7 +189,7 @@ public class SQLite {
             pstmt.setString(4, timestamp);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -194,7 +202,7 @@ public class SQLite {
             pstmt.setDouble(3, price);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -208,7 +216,7 @@ public class SQLite {
             pstmt.setString(4, targetName);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -219,20 +227,22 @@ public class SQLite {
             pstmt.setString(1, name);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
-    public void addUser(String username, String password) {
-        String hashed = PasswordUtil.hashPassword(password);
+    public boolean addUser(String username, String password) {
         String sql = "INSERT INTO users(username,password) VALUES(?,?)";
         try (Connection conn = DriverManager.getConnection(driverURL);
             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)){
+            String hashed = PasswordUtil.hashPassword(password);
             pstmt.setString(1, username);
             pstmt.setString(2, hashed);
             pstmt.executeUpdate();
+            return true;
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
+            return false;
         }
     }
     
@@ -253,7 +263,7 @@ public class SQLite {
                                    rs.getString("timestamp")));
             }
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
         return histories;
     }
@@ -275,7 +285,7 @@ public class SQLite {
                 }
             }
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
         return histories;
     }
@@ -296,7 +306,7 @@ public class SQLite {
                                    rs.getString("timestamp")));
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            reportDatabaseError(ex);
         }
         return logs;
     }
@@ -316,7 +326,7 @@ public class SQLite {
                                    rs.getFloat("price")));
             }
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
         return products;
     }
@@ -336,21 +346,25 @@ public class SQLite {
                                    rs.getInt("role"),
                                    rs.getInt("locked")));
             }
-        } catch (Exception ex) {}
+        } catch (Exception ex) {
+            reportDatabaseError(ex);
+        }
         return users;
     }
     
-    public void addUser(String username, String password, int role) {
-        String hashed = PasswordUtil.hashPassword(password);
+    public boolean addUser(String username, String password, int role) {
         String sql = "INSERT INTO users(username,password,role) VALUES(?,?,?)";
         try (Connection conn = DriverManager.getConnection(driverURL);
             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)){
+            String hashed = PasswordUtil.hashPassword(password);
             pstmt.setString(1, username);
             pstmt.setString(2, hashed);
             pstmt.setInt(3, role);
             pstmt.executeUpdate();
+            return true;
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
+            return false;
         }
     }
     
@@ -360,9 +374,8 @@ public class SQLite {
             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, username);
             pstmt.executeUpdate();
-            System.out.println("User " + username + " has been deleted.");
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -380,7 +393,7 @@ public class SQLite {
                 }
             }
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
         return product;
     }
@@ -401,7 +414,7 @@ public class SQLite {
                 }
             }
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
         return user;
     }
@@ -414,7 +427,7 @@ public class SQLite {
             pstmt.setString(2, username);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -426,7 +439,7 @@ public class SQLite {
             pstmt.setString(2, username);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
@@ -439,21 +452,23 @@ public class SQLite {
             pstmt.setString(2, username);
             pstmt.executeUpdate();
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
     }
     
     public String getLastLogin(String username) {
-        String sql = "SELECT timestamp FROM logs WHERE username='" + username + "' AND event='LOGIN' ORDER BY id DESC LIMIT 1;";
+        String sql = "SELECT timestamp FROM logs WHERE username=? AND event='LOGIN' ORDER BY id DESC LIMIT 1;";
         String lastLogin = "First time login";
         try (Connection conn = DriverManager.getConnection(driverURL);
-            Statement stmt = conn.createStatement();
-            ResultSet rs = stmt.executeQuery(sql)){
-            if(rs.next()) {
-                lastLogin = rs.getString("timestamp");
+            java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)){
+            pstmt.setString(1, username);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if(rs.next()) {
+                    lastLogin = rs.getString("timestamp");
+                }
             }
         } catch (Exception ex) {
-            System.out.print(ex);
+            reportDatabaseError(ex);
         }
         return lastLogin;
     }

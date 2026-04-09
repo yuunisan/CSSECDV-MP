@@ -22,7 +22,7 @@ public class PasswordUtil {
             return ITERATIONS + ":" + Base64.getEncoder().encodeToString(salt) + ":"
                     + Base64.getEncoder().encodeToString(hash);
         } catch (Exception e) {
-            throw new RuntimeException("Error hashing password", e);
+            throw new IllegalStateException("Unable to process password.");
         }
     }
 

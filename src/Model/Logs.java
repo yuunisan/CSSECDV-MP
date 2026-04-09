@@ -46,7 +46,7 @@ public class Logs {
         try {
             this.timestamp = new Timestamp(dateformat.parse(timestamp).getTime());
         } catch (ParseException ex) {
-            ex.printStackTrace();
+            this.timestamp = new Timestamp(new Date().getTime());
         }
     }
     
