@@ -142,6 +142,7 @@ public class Register extends javax.swing.JPanel {
     private void logValidationFailure(String username, String reason) {
         if (frame != null && frame.main != null && frame.main.sqlite != null) {
             String auditUser = (username == null || username.trim().isEmpty()) ? "UNKNOWN" : username.trim();
+            // [2.5.2] - Record timestamped audit logs for input validation failures.
             frame.main.sqlite.addLogs("VALIDATION_FAILED", auditUser, reason,
                     new java.sql.Timestamp(new java.util.Date().getTime()).toString());
         }

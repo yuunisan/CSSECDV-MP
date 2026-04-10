@@ -324,12 +324,14 @@ public class MgmtUser extends javax.swing.JPanel {
     }
 
     private void logAccessDenied(String action) {
+        // [2.5.4] - Log every privilege-escalation/access-denied attempt.
         sqlite.addLogs("ACCESS_DENIED", getAuditUsername(),
                 "Denied access attempt: " + action,
                 new java.sql.Timestamp(new java.util.Date().getTime()).toString());
     }
 
     private void logValidationFailure(String action, String reason) {
+        // [2.5.2] - Record validation failures as timestamped security-audit events.
         sqlite.addLogs("VALIDATION_FAILED", getAuditUsername(),
                 action + " validation failed: " + reason,
                 new java.sql.Timestamp(new java.util.Date().getTime()).toString());

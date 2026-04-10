@@ -11,6 +11,7 @@ public class AccessControl {
     public static final String VIEW_ALL_HISTORY = "VIEW_ALL_HISTORY";
     public static final String VIEW_OWN_HISTORY = "VIEW_OWN_HISTORY";
     public static final String VIEW_USERS = "VIEW_USERS";
+    // [2.5.1] - Security log viewing/management permission.
     public static final String VIEW_LOGS = "VIEW_LOGS";
 
     public static boolean hasAccess(User user, String permission) {
@@ -44,6 +45,7 @@ public class AccessControl {
             case VIEW_USERS:
                 return role == 5;
             case VIEW_LOGS:
+                // [2.5.1] - Restrict log management to Administrator (Role 5).
                 return role == 5;
             default:
                 return false;

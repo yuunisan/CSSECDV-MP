@@ -359,12 +359,14 @@ public class MgmtProduct extends javax.swing.JPanel {
     }
 
     private void logAccessDenied(String action) {
+        // [2.5.4] - Log every attempt to access a resource beyond assigned role privileges.
         sqlite.addLogs("ACCESS_DENIED", getAuditUsername(),
                 "Denied access attempt: " + action,
                 new java.sql.Timestamp(new java.util.Date().getTime()).toString());
     }
 
     private void logValidationFailure(String action, String reason) {
+        // [2.5.2] - Record timestamped logs for rejected/invalid input values.
         sqlite.addLogs("VALIDATION_FAILED", getAuditUsername(),
                 action + " validation failed: " + reason,
                 new java.sql.Timestamp(new java.util.Date().getTime()).toString());

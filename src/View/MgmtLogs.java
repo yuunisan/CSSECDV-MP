@@ -30,6 +30,7 @@ public class MgmtLogs extends javax.swing.JPanel {
         // CLEAR TABLE
         tableModel.setRowCount(0);
 
+        // [2.5.1] - Ensure log-management controls are visible only to Administrator (Role 5).
         clearBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS));
         debugBtn.setVisible(Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS));
 
@@ -137,6 +138,7 @@ public class MgmtLogs extends javax.swing.JPanel {
 
     private void clearBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_clearBtnActionPerformed
         if (!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS)) {
+            // [2.5.1] - Block non-admin log management actions.
             logAccessDenied("CLEAR_LOGS");
             javax.swing.JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error",
                     javax.swing.JOptionPane.ERROR_MESSAGE);
@@ -152,6 +154,7 @@ public class MgmtLogs extends javax.swing.JPanel {
 
     private void debugBtnActionPerformed(java.awt.event.ActionEvent evt) {// GEN-FIRST:event_debugBtnActionPerformed
         if (!Controller.AccessControl.hasAccess(sqlite.currentUser, Controller.AccessControl.VIEW_LOGS)) {
+            // [2.5.1] - Block non-admin log management actions.
             logAccessDenied("TOGGLE_DEBUG_MODE");
             javax.swing.JOptionPane.showMessageDialog(null, "Access Denied.", "Authorization Error",
                     javax.swing.JOptionPane.ERROR_MESSAGE);
@@ -165,6 +168,7 @@ public class MgmtLogs extends javax.swing.JPanel {
 
     private void logAccessDenied(String action) {
         String username = sqlite.currentUser != null ? sqlite.currentUser.getUsername() : "UNKNOWN";
+        // [2.5.4] - Log each access-violation attempt with timestamp and action context.
         sqlite.addLogs("ACCESS_DENIED", username,
                 "Denied access attempt: " + action,
                 new java.sql.Timestamp(new java.util.Date().getTime()).toString());

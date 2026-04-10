@@ -300,6 +300,7 @@ public class Frame extends javax.swing.JFrame {
                 ((ClientHome) panel).init(main.sqlite);
             }
         } catch (Exception ex) {
+            // [2.4.3] - Catch panel initialization errors to prevent runtime crashes.
             JOptionPane.showMessageDialog(this,
                     "A screen could not be loaded. The application will continue in a safe state.",
                     "Application Error", JOptionPane.ERROR_MESSAGE);
@@ -329,6 +330,7 @@ public class Frame extends javax.swing.JFrame {
             Model.User user = main.sqlite.getUser(username);
             if (user != null) {
                 if (user.getRole() == 1 || user.getLocked() >= 5) {
+                    // [2.5.3] - Log failed authentication attempts for unavailable/locked accounts.
                     main.sqlite.addLogs("LOGIN_FAILED", username,
                             "Authentication failed: account unavailable.",
                             new java.sql.Timestamp(new java.util.Date().getTime()).toString());
@@ -341,6 +343,7 @@ public class Frame extends javax.swing.JFrame {
                 if (Controller.PasswordUtil.verifyPassword(password, user.getPassword())) {
                     main.sqlite.updateUserLock(username, 0);
                     String lastTimestamp = main.sqlite.getLastLogin(username);
+                    // [2.5.3] - Log successful authentication attempts.
                     main.sqlite.addLogs("LOGIN", username, "User login successful",
                             new java.sql.Timestamp(new java.util.Date().getTime()).toString());
 
@@ -376,11 +379,13 @@ public class Frame extends javax.swing.JFrame {
                 } else {
                     int fails = user.getLocked() + 1;
                     main.sqlite.updateUserLock(username, fails);
+                    // [2.5.3] - Log failed authentication attempts with attempt counters.
                     main.sqlite.addLogs("LOGIN_FAILED", username,
                             "Authentication failed: invalid credentials (attempt " + fails + "/5).",
                             new java.sql.Timestamp(new java.util.Date().getTime()).toString());
                     if (fails >= 5) {
                         main.sqlite.updateUserRole(username, 1);
+                    // [2.5.3] - Log lockout event when threshold is reached.
                         main.sqlite.addLogs("ACCOUNT_LOCKED", username,
                                 "Account locked after repeated authentication failures.",
                                 new java.sql.Timestamp(new java.util.Date().getTime()).toString());
@@ -390,6 +395,7 @@ public class Frame extends javax.swing.JFrame {
                     loginNav();
                 }
             } else {
+                // [2.5.3] - Log failed authentication attempts for unknown usernames.
                 main.sqlite.addLogs("LOGIN_FAILED", username,
                         "Authentication failed: unknown username.",
                         new java.sql.Timestamp(new java.util.Date().getTime()).toString());
@@ -398,6 +404,8 @@ public class Frame extends javax.swing.JFrame {
                 loginNav();
             }
         } catch (Exception ex) {
+            // [2.4.2] - Replace technical exception details with a user-friendly message.
+            // [2.4.4] - Redirect to safe unprivileged state on unrecoverable runtime error.
             JOptionPane.showMessageDialog(this,
                     "The application encountered a problem and returned to a safe state.",
                     "Application Error", JOptionPane.ERROR_MESSAGE);
@@ -428,6 +436,7 @@ public class Frame extends javax.swing.JFrame {
             }
             return created;
         } catch (Exception ex) {
+            // [2.4.2] - Keep registration error output generic and non-descriptive.
             JOptionPane.showMessageDialog(this,
                     "Registration could not be completed. The application stayed in a safe state.",
                     "Registration Error", JOptionPane.ERROR_MESSAGE);
@@ -438,6 +447,7 @@ public class Frame extends javax.swing.JFrame {
     private void logAccessDenied(String action) {
         if (main != null && main.sqlite != null) {
             String username = currentUser != null ? currentUser.getUsername() : "UNKNOWN";
+            // [2.5.4] - Audit all attempts to access resources beyond assigned privileges.
             main.sqlite.addLogs("ACCESS_DENIED", username,
                     "Denied access attempt: " + action,
                     new java.sql.Timestamp(new java.util.Date().getTime()).toString());
