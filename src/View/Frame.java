@@ -313,15 +313,18 @@ public class Frame extends javax.swing.JFrame {
 
     public void loginAction(String username, String password) {
         try {
-            // 2.3.1 / 2.3.3: Reject-by-default — validate username format and password length
-            // before touching the database. Use a generic error to avoid username enumeration.
+            // 2.3.1 / 2.3.3: Reject-by-default — validate username format and password
+            // length
+            // before touching the database. Use a generic error to avoid username
+            // enumeration.
             String usernameErr = Controller.InputValidator.validateUsername(username);
             if (usernameErr != null) {
                 javax.swing.JOptionPane.showMessageDialog(this, "Invalid username and/or password",
                         "Login Error", javax.swing.JOptionPane.ERROR_MESSAGE);
                 return;
             }
-            if (password == null || password.isEmpty() || password.length() > Controller.InputValidator.MAX_PASSWORD_LENGTH) {
+            if (password == null || password.isEmpty()
+                    || password.length() > Controller.InputValidator.MAX_PASSWORD_LENGTH) {
                 javax.swing.JOptionPane.showMessageDialog(this, "Invalid username and/or password",
                         "Login Error", javax.swing.JOptionPane.ERROR_MESSAGE);
                 return;
@@ -360,19 +363,16 @@ public class Frame extends javax.swing.JFrame {
                     clientBtn.setVisible(false);
 
                     frameView.show(Container, "homePnl");
-                    if(user.getRole() == 5) {
+                    if (user.getRole() == 5) {
                         adminBtn.setVisible(true);
                         adminBtn.doClick();
-                    }
-                    else if(user.getRole() == 4) {
+                    } else if (user.getRole() == 4) {
                         managerBtn.setVisible(true);
                         managerBtn.doClick();
-                    }
-                    else if(user.getRole() == 3) {
+                    } else if (user.getRole() == 3) {
                         staffBtn.setVisible(true);
                         staffBtn.doClick();
-                    }
-                    else if(user.getRole() == 2) {
+                    } else if (user.getRole() == 2) {
                         clientBtn.setVisible(true);
                         clientBtn.doClick();
                     }
@@ -385,7 +385,7 @@ public class Frame extends javax.swing.JFrame {
                             new java.sql.Timestamp(new java.util.Date().getTime()).toString());
                     if (fails >= 5) {
                         main.sqlite.updateUserRole(username, 1);
-                    // [2.5.3] - Log lockout event when threshold is reached.
+                        // [2.5.3] - Log lockout event when threshold is reached.
                         main.sqlite.addLogs("ACCOUNT_LOCKED", username,
                                 "Account locked after repeated authentication failures.",
                                 new java.sql.Timestamp(new java.util.Date().getTime()).toString());
