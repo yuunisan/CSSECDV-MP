@@ -1,4 +1,9 @@
-# CSSECDV-MP
+# CSSECDV-MP S31 - GROUP 5
+
+## Project Members/Collaborators
+- Lourenz Jhay Baniqued
+- Hans Jared Sescon
+- Ryu Kisen Unisan
 
 ## Overview
 
