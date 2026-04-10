@@ -9,14 +9,14 @@ This is a Java Swing desktop application that uses SQLite for persistence. It in
 ### Prerequisites
 
 - Java 17 or later
-- The bundled SQLite JDBC driver: `sqlite-jdbc-3.23.1.jar`
+- The bundled SQLite JDBC driver: `java -jar dist\CSSECDV.jar`
 
 ### Run From Terminal
 
 From the project root directory on your machine, run:
 
 ```powershell
-java -cp "build\classes;sqlite-jdbc-3.23.1.jar" Controller.Main
+java -jar dist\CSSECDV.jar
 ```
 
 ### Expected Startup Behavior
